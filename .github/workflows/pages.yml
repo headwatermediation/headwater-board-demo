@@ -1,0 +1,48 @@
+name: Publish Headwater Board demo
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-public-demo
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out demo
+        uses: actions/checkout@v4
+
+      - name: Verify isolated static demo
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s index.html
+          test -s board/index.html
+          ! grep -Eqi 'NOTION_TOKEN|HEADWATER_BOARD_NOTION_TOKEN|HUB_BASE_URL|secretmanager|api/board/mcp' index.html
+          echo "PUBLIC_DEMO_ISOLATION_OK"
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
